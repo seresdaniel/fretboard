@@ -1,0 +1,373 @@
+<!DOCTYPE html>
+<!--
+- egyedi fretboardokat tud megjeleníteni, akárt teljesen custom hangszereknél is
+- bal és jobbkezes nézet
+
+- ###tudjon skálákat
+- ###tudjon akkordokat
+- ###tudja azokat lejátszani
+- ###ujjrendek
+-->
+<html lang="hu">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+    <title>Fretboard Megjelenítő 0.02</title>
+    <link href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css" rel="stylesheet">
+    <style>
+        .fretboard {
+            margin-top: 20px;
+        }
+        .fretboard th, .fretboard td {
+            text-align: center;
+        }
+        .nav-item {
+            cursor: pointer;
+        }
+    </style>
+</head>
+<body>
+<div class="container">
+    <h1 class="mt-5">Fretboard Megjelenítő 0.02</h1>
+    <nav class="navbar navbar-expand-lg navbar-light bg-light">
+    <!-- Navigációs sáv -->
+        <div class="collapse navbar-collapse" id="navbarSupportedContent">
+            <ul class="navbar-nav mr-auto">
+                <li class="nav-item">
+                    <a class="nav-link" href="#" onclick="showSettingsModal(); return false;">Beállítások</a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link" href="#" onclick="showInstrumentModal(); return false;">Hangszerek</a>
+                </li>
+            </ul>
+        </div>
+    </nav>
+
+    <!-- Fretboard táblázat -->
+    <table class="table table-bordered fretboard">
+        <thead>
+            <tr>
+                <th>Húr/Fret</th>
+                <script>
+                    for (let f = 1; f <= 12; f++) {
+                        document.write('<th>' + f + '</th>');
+                    }
+                </script>
+            </tr>
+        </thead>
+        <tbody>
+            <script>
+                const notes = ['C', 'C#', 'D', 'D#', 'E', 'F', 'F#', 'G', 'G#', 'A', 'A#', 'B'];
+                const instruments = {
+                    'gitár': {
+                        '6 húros': {
+                            strings: 6,
+                            frets: 12,
+                            stringNotes: ['E2', 'A2', 'D3', 'G3', 'B3', 'E4'],
+                            musicalNotes: { start: 1, end: 12, step: 1 },
+                            noteView: 'b',
+                            hand: 'right'
+                        },
+                        '6 húros Drop-D': {
+                            strings: 6,
+                            frets: 12,
+                            stringNotes: ['D2', 'A2', 'D3', 'G3', 'B3', 'E4'],
+                            musicalNotes: { start: 1, end: 12, step: 1 },
+                            noteView: 'b',
+                            hand: 'right'
+                        },
+                        '7 húros': {
+                            strings: 7,
+                            frets: 12,
+                            stringNotes: ['B1', 'E2', 'A2', 'D3', 'G3', 'B3', 'E4'],
+                            musicalNotes: { start: 1, end: 12, step: 1 },
+                            noteView: 'b',
+                            hand: 'right'
+                        },
+                        '8 húros': {
+                            strings: 8,
+                            frets: 12,
+                            stringNotes: ['F#1', 'B1', 'E2', 'A2', 'D3', 'G3', 'B3', 'E4'],
+                            musicalNotes: { start: 1, end: 12, step: 1 },
+                            noteView: 'b',
+                            hand: 'right'
+                        }
+                    },
+                    'basszusgitár': {
+                        '4 húros': {
+                            strings: 4,
+                            frets: 12,
+                            stringNotes: ['E1', 'A1', 'D2', 'G2'],
+                            musicalNotes: { start: 1, end: 12, step: 1 },
+                            noteView: 'b',
+                            hand: 'right'
+                        },
+                        '5 húros': {
+                            strings: 5,
+                            frets: 12,
+                            stringNotes: ['B0', 'E1', 'A1', 'D2', 'G2'],
+                            musicalNotes: { start: 1, end: 12, step: 1 },
+                            noteView: 'b',
+                            hand: 'right'
+                        },
+                        '6 húros': {
+                            strings: 6,
+                            frets: 12,
+                            stringNotes: ['B0', 'E1', 'A1', 'D2', 'G2', 'C3'],
+                            musicalNotes: { start: 1, end: 12, step: 1 },
+                            noteView: 'b',
+                            hand: 'right'
+                        }
+                    },
+                    'ukulele': {
+                        'standard': {
+                            strings: 4,
+                            frets: 12,
+                            stringNotes: ['G4', 'C4', 'E4', 'A4'],
+                            musicalNotes: { start: 1, end: 12, step: 1 },
+                            noteView: 'b',
+                            hand: 'right'
+                        }
+                    }
+                };
+
+                let settings = instruments['basszusgitár']['5 húros'];
+
+                function getNoteIndex(note) {
+                    const noteName = note.slice(0, -1);
+                    return notes.indexOf(noteName);
+                }
+
+                function getNoteAtFret(openNote, fret) {
+                    const openNoteIndex = getNoteIndex(openNote);
+                    const octave = parseInt(openNote.slice(-1), 10);
+                    const noteIndex = (openNoteIndex + fret) % 12;
+                    const newOctave = octave + Math.floor((openNoteIndex + fret) / 12);
+                    return notes[noteIndex] + newOctave;
+                }
+
+                function reverseStringNotes(stringNotes) {
+                    return stringNotes.slice().reverse();
+                }
+
+                function generateFretboard() {
+                    const theadRow = document.querySelector('.fretboard thead tr');
+                    theadRow.innerHTML = '<th>Húr/Fret</th>';
+                    if (settings.hand === 'left') {
+                        for (let f = settings.frets; f >= 1; f--) {
+                            theadRow.innerHTML += '<th>' + f + '</th>';
+                        }
+                    } else {
+                        for (let f = 1; f <= settings.frets; f++) {
+                            theadRow.innerHTML += '<th>' + f + '</th>';
+                        }
+                    }
+
+                    for (let s = (settings.hand === 'left' ? 0 : settings.strings - 1); (settings.hand === 'left' ? s < settings.strings : s >= 0); (settings.hand === 'left' ? s++ : s--)) {
+                        document.write('<tr><th>' + settings.stringNotes[s].slice(0, -1) + '</th>');
+                        if (settings.hand === 'left') {
+                            for (let f = settings.frets; f >= 1; f--) {
+                                const note = getNoteAtFret(settings.stringNotes[s], f * settings.musicalNotes.step);
+                                document.write('<td>' + note.slice(0, -1) + '</td>');
+                            }
+                        } else {
+                            for (let f = 1; f <= settings.frets; f++) {
+                                const note = getNoteAtFret(settings.stringNotes[s], f * settings.musicalNotes.step);
+                                document.write('<td>' + note.slice(0, -1) + '</td>');
+                            }
+                        }
+                        document.write('</tr>');
+                    }
+                }
+
+                generateFretboard();
+            </script>
+        </tbody>
+    </table>
+</div>
+
+<!-- Bootstrap JavaScript könyvtárak -->
+<script src="https://code.jquery.com/jquery-3.5.1.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.9.2/dist/umd/popper.min.js"></script>
+<script src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>
+
+<!-- Modal a beállításokhoz -->
+<div class="modal fade" id="settingsModal" tabindex="-1" role="dialog" aria-labelledby="settingsModalLabel" aria-hidden="true">
+    <div class="modal-dialog" role="document">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="settingsModalLabel">Beállítások szerkesztése</h5>
+                <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+            </div>
+            <div class="modal-body">
+                <div class="form-group">
+                    <label for="stringsInput">Húrok száma</label>
+                    <input type="number" class="form-control" id="stringsInput" value="5">
+                </div>
+                <div class="form-group">
+                    <label for="fretsInput">Bundok száma</label>
+                    <input type="number" class="form-control" id="fretsInput" value="12">
+                </div>
+                <div class="form-group">
+                    <label for="stringNotesInput">Húrok hangolása (vesszővel elválasztva)</label>
+                    <input type="text" class="form-control" id="stringNotesInput" value="B0,E1,A1,D2,G2">
+                </div>
+                <div class="form-group">
+                    <label for="handInput">Kéz</label>
+                    <select class="form-control" id="handInput">
+                        <option value="right" selected>Jobb</option>
+                        <option value="left">Bal</option>
+                    </select>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-dismiss="modal">Mégse</button>
+                <button type="button" class="btn btn-primary" onclick="saveSettings()">Mentés</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal a hangszerek kiválasztásához -->
+<div class="modal fade" id="instrumentModal" tabindex="-1" role="dialog" aria-labelledby="instrumentModalLabel" aria-hidden="true">
+    <div class="modal-dialog" role="document">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="instrumentModalLabel">Hangszerek kiválasztása</h5>
+                <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+            </div>
+            <div class="modal-body">
+                <div class="form-group">
+                    <label for="instrumentSelect">Hangszerek</label>
+                    <select class="form-control" id="instrumentSelect" onchange="updateTuningOptions()">
+                        <option value="gitár">Gitár</option>
+                        <option value="basszusgitár">Basszusgitár</option>
+                        <option value="ukulele">Ukulele</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label for="tuningSelect">Hangolás</label>
+                    <select class="form-control" id="tuningSelect">
+                        <!-- A hangolási lehetőségek dinamikusan frissülnek -->
+                    </select>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-dismiss="modal">Mégse</button>
+                <button type="button" class="btn btn-primary" onclick="selectInstrument()">Kiválaszt</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    $(document).ready(function() {
+        function showSettingsModal() {
+            $('#stringsInput').val(settings.strings);
+            $('#fretsInput').val(settings.frets);
+            $('#stringNotesInput').val(settings.stringNotes.join(','));
+            $('#handInput').val(settings.hand);
+            $('#settingsModal').modal('show');
+        }
+
+        function saveSettings() {
+            const strings = parseInt($('#stringsInput').val(), 10);
+            const frets = parseInt($('#fretsInput').val(), 10);
+            const stringNotes = $('#stringNotesInput').val().split(',');
+            const hand = $('#handInput').val();
+
+            if (hand === 'left') {
+                settings.stringNotes = reverseStringNotes(stringNotes);
+            } else {
+                settings.stringNotes = stringNotes;
+            }
+
+            settings = {
+                strings: strings,
+                frets: frets,
+                stringNotes: settings.stringNotes,
+                musicalNotes: { start: 1, end: frets, step: 1 },
+                noteView: 'b',
+                hand: hand
+            };
+
+            $('#settingsModal').modal('hide');
+            renderFretboard();
+        }
+
+        function showInstrumentModal() {
+            updateTuningOptions();
+            $('#instrumentModal').modal('show');
+        }
+
+        function updateTuningOptions() {
+            const instrument = $('#instrumentSelect').val();
+            const tuningSelect = $('#tuningSelect');
+            tuningSelect.empty();
+
+            for (const tuning in instruments[instrument]) {
+                const option = $('<option>').val(tuning).text(tuning);
+                tuningSelect.append(option);
+            }
+        }
+
+        function selectInstrument() {
+            const instrument = $('#instrumentSelect').val();
+            const tuning = $('#tuningSelect').val();
+            settings = instruments[instrument][tuning];
+            $('#instrumentModal').modal('hide');
+            renderFretboard();
+        }
+
+        function renderFretboard() {
+            const tbody = $('.fretboard tbody');
+            tbody.empty();
+
+            const theadRow = $('.fretboard thead tr');
+            theadRow.empty();
+            if (settings.hand === 'left') {
+                for (let f = settings.frets; f >= 1; f--) {
+                    theadRow.append('<th>' + f + '</th>');
+                }
+                theadRow.append('<th>Húr/Fret</th>');
+            } else {
+                theadRow.append('<th>Húr/Fret</th>');
+                for (let f = 1; f <= settings.frets; f++) {
+                    theadRow.append('<th>' + f + '</th>');
+                }
+            }
+
+            for (let s = 0; s < settings.strings; s++) {
+                const row = $('<tr>');
+                if (settings.hand === 'left') {
+                    for (let f = settings.frets; f >= 1; f--) {
+                        const note = getNoteAtFret(settings.stringNotes[s], f * settings.musicalNotes.step);
+                        row.append('<td>' + note.slice(0, -1) + '</td>');
+                    }
+                    row.append('<th>' + settings.stringNotes[s].slice(0, -1) + '</th>');
+                } else {
+                    row.append('<th>' + settings.stringNotes[s].slice(0, -1) + '</th>');
+                    for (let f = 1; f <= settings.frets; f++) {
+                        const note = getNoteAtFret(settings.stringNotes[s], f * settings.musicalNotes.step);
+                        row.append('<td>' + note.slice(0, -1) + '</td>');
+                    }
+                }
+                tbody.append(row);
+            }
+        }
+
+        window.showSettingsModal = showSettingsModal;
+        window.saveSettings = saveSettings;
+        window.showInstrumentModal = showInstrumentModal;
+        window.updateTuningOptions = updateTuningOptions;
+        window.selectInstrument = selectInstrument;
+
+        renderFretboard();
+    });
+</script>
+</body>
+</html>
