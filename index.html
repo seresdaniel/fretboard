@@ -2,8 +2,7 @@
 <!--
 - egyedi fretboardokat tud megjeleníteni, akárt teljesen custom hangszereknél is
 - bal és jobbkezes nézet
-
-- ###tudjon skálákat
+- tudjon skálákat (alaphangokkal)
 - ###tudjon akkordokat
 - ###tudja azokat lejátszani
 - ###ujjrendek
@@ -12,23 +11,27 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
-    <title>Fretboard Megjelenítő 0.02</title>
+    <title>Fretboard Megjelenítő 0.04</title>
     <link href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css" rel="stylesheet">
-    <style>
-        .fretboard {
-            margin-top: 20px;
-        }
-        .fretboard th, .fretboard td {
-            text-align: center;
-        }
-        .nav-item {
-            cursor: pointer;
-        }
-    </style>
+	<style>
+		.fretboard {
+			margin-top: 20px;
+		}
+		.fretboard th, .fretboard td {
+			text-align: center;
+		}
+		.nav-item {
+			cursor: pointer;
+		}
+		/* Új osztály a vastagabb betűkhöz */
+		.bold-note {
+			font-weight: bold;
+		}
+	</style>
 </head>
 <body>
 <div class="container">
-    <h1 class="mt-5">Fretboard Megjelenítő 0.02</h1>
+    <h1 class="mt-5">Fretboard Megjelenítő 0.04</h1>
     <nav class="navbar navbar-expand-lg navbar-light bg-light">
     <!-- Navigációs sáv -->
         <div class="collapse navbar-collapse" id="navbarSupportedContent">
@@ -39,6 +42,31 @@
                 <li class="nav-item">
                     <a class="nav-link" href="#" onclick="showInstrumentModal(); return false;">Hangszerek</a>
                 </li>
+				<li class="nav-item">
+					<select id="scaleRootNoteSelect" class="form-control" onchange="applyScale()">
+						<option value="C">C</option>
+						<option value="C#">C#</option>
+						<option value="D">D</option>
+						<option value="D#">D#</option>
+						<option value="E">E</option>
+						<option value="F">F</option>
+						<option value="F#">F#</option>
+						<option value="G">G</option>
+						<option value="G#">G#</option>
+						<option value="A">A</option>
+						<option value="A#">A#</option>
+						<option value="B">B</option>
+					</select>
+				</li>
+				<li class="nav-item">
+					<select id="scaleSelect" class="form-control" onchange="applyScale()">
+						<option value="">Válassz skálát</option>
+						<option value="Major">Major</option>
+						<option value="Minor">Minor</option>
+						<option value="Pentatonic">Pentatonic</option>
+						<option value="Blues">Blues</option>
+					</select>
+				</li>
             </ul>
         </div>
     </nav>
@@ -57,8 +85,10 @@
         </thead>
         <tbody>
             <script>
+				// zenei hangok
                 const notes = ['C', 'C#', 'D', 'D#', 'E', 'F', 'F#', 'G', 'G#', 'A', 'A#', 'B'];
-                const instruments = {
+                // hangszerek
+				const instruments = {
                     'gitár': {
                         '6 húros': {
                             strings: 6,
@@ -127,11 +157,27 @@
                             musicalNotes: { start: 1, end: 12, step: 1 },
                             noteView: 'b',
                             hand: 'right'
-                        }
-                    }
+                        },
+						'D-tuning': {
+						    strings: 4,
+						    frets: 12,
+						    stringNotes: ['A4', 'D4', 'F#4', 'B4'],
+						    musicalNotes: { start: 1, end: 12, step: 1 },
+						    noteView: 'b',
+						    hand: 'right'
+						}		
+					}
                 };
-
-                let settings = instruments['basszusgitár']['5 húros'];
+				// skálák
+				const scales = {
+					'Major': ['C', 'D', 'E', 'F', 'G', 'A', 'B'],
+					'Minor': ['C', 'D', 'D#', 'F', 'G', 'G#', 'A#'],
+					'Pentatonic': ['C', 'D', 'E', 'G', 'A'],
+					'Blues': ['C', 'D#', 'F', 'F#', 'G', 'A#']
+				};
+				
+				// alapértelmezett hangszer
+                let settings = instruments['gitár']['6 húros'];
 
                 function getNoteIndex(note) {
                     const noteName = note.slice(0, -1);
@@ -149,36 +195,76 @@
                 function reverseStringNotes(stringNotes) {
                     return stringNotes.slice().reverse();
                 }
+				
+				
+				//generateFretboard
+				function generateFretboard() {
+					const theadRow = document.querySelector('.fretboard thead tr');
+					theadRow.innerHTML = '<th>Húr/Fret</th>';
+					if (settings.hand === 'left') {
+						for (let fret = settings.frets; fret >= 1; fret--) {
+							theadRow.innerHTML += '<th>' + fret + '</th>';
+						}
+					} else {
+						for (let fret = 1; fret <= settings.frets; fret++) {
+							theadRow.innerHTML += '<th>' + fret + '</th>';
+						}
+					}
 
-                function generateFretboard() {
-                    const theadRow = document.querySelector('.fretboard thead tr');
-                    theadRow.innerHTML = '<th>Húr/Fret</th>';
-                    if (settings.hand === 'left') {
-                        for (let f = settings.frets; f >= 1; f--) {
-                            theadRow.innerHTML += '<th>' + f + '</th>';
-                        }
-                    } else {
-                        for (let f = 1; f <= settings.frets; f++) {
-                            theadRow.innerHTML += '<th>' + f + '</th>';
-                        }
-                    }
+					// Jobbkezes gitár esetén fordított sorrendben jelenítjük meg a húrokat
+					const stringNotesForDisplay = settings.hand === 'left' ? settings.stringNotes : settings.stringNotes.slice().reverse();
 
-                    for (let s = (settings.hand === 'left' ? 0 : settings.strings - 1); (settings.hand === 'left' ? s < settings.strings : s >= 0); (settings.hand === 'left' ? s++ : s--)) {
-                        document.write('<tr><th>' + settings.stringNotes[s].slice(0, -1) + '</th>');
-                        if (settings.hand === 'left') {
-                            for (let f = settings.frets; f >= 1; f--) {
-                                const note = getNoteAtFret(settings.stringNotes[s], f * settings.musicalNotes.step);
-                                document.write('<td>' + note.slice(0, -1) + '</td>');
-                            }
-                        } else {
-                            for (let f = 1; f <= settings.frets; f++) {
-                                const note = getNoteAtFret(settings.stringNotes[s], f * settings.musicalNotes.step);
-                                document.write('<td>' + note.slice(0, -1) + '</td>');
-                            }
-                        }
-                        document.write('</tr>');
-                    }
-                }
+					for (let stringIndex = 0; stringIndex < settings.strings; stringIndex++) {
+						document.write('<tr><th>' + stringNotesForDisplay[stringIndex].slice(0, -1) + '</th>');
+						if (settings.hand === 'left') {
+							for (let fret = settings.frets; fret >= 1; fret--) {
+								const note = getNoteAtFret(stringNotesForDisplay[stringIndex], fret * settings.musicalNotes.step);
+								document.write('<td>' + note.slice(0, -1) + '</td>');
+							}
+						} else {
+							for (let fret = 1; fret <= settings.frets; fret++) {
+								const note = getNoteAtFret(stringNotesForDisplay[stringIndex], fret * settings.musicalNotes.step);
+								document.write('<td>' + note.slice(0, -1) + '</td>');
+							}
+						}
+						document.write('</tr>');
+					}
+				}
+				//generateFretboard_end
+				
+				
+				//applyscale
+				function applyScale() {
+					const selectedScale = $('#scaleSelect').val();
+					const rootNote = $('#scaleRootNoteSelect').val();
+					
+					if (!selectedScale || !rootNote) {
+						renderFretboard();
+						return;
+					}
+					
+					const scaleNotes = scales[selectedScale].map(note => {
+						const rootIndex = notes.indexOf(rootNote);
+						const noteIndex = (notes.indexOf(note) + rootIndex) % notes.length;
+						return notes[noteIndex];
+					});
+
+					const tbody = $('.fretboard tbody');
+
+					tbody.find('td').each(function() {
+						const cellNote = $(this).text();
+						if (scaleNotes.includes(cellNote)) {
+							$(this).css('background-color', '#CBE86B');
+							$(this).addClass('bold-note'); // Vastag betűs osztály hozzáadása
+						} else {
+							$(this).css('background-color', '');
+							$(this).removeClass('bold-note'); // Vastag betűs osztály eltávolítása
+						}
+					});
+				}
+
+				//applyscale_end
+				
 
                 generateFretboard();
             </script>
@@ -323,42 +409,48 @@
             renderFretboard();
         }
 
-        function renderFretboard() {
-            const tbody = $('.fretboard tbody');
-            tbody.empty();
 
-            const theadRow = $('.fretboard thead tr');
-            theadRow.empty();
-            if (settings.hand === 'left') {
-                for (let f = settings.frets; f >= 1; f--) {
-                    theadRow.append('<th>' + f + '</th>');
-                }
-                theadRow.append('<th>Húr/Fret</th>');
-            } else {
-                theadRow.append('<th>Húr/Fret</th>');
-                for (let f = 1; f <= settings.frets; f++) {
-                    theadRow.append('<th>' + f + '</th>');
-                }
-            }
+		//renderfretboard
+		function renderFretboard() {
+			const tbody = $('.fretboard tbody');
+			tbody.empty();
 
-            for (let s = 0; s < settings.strings; s++) {
-                const row = $('<tr>');
-                if (settings.hand === 'left') {
-                    for (let f = settings.frets; f >= 1; f--) {
-                        const note = getNoteAtFret(settings.stringNotes[s], f * settings.musicalNotes.step);
-                        row.append('<td>' + note.slice(0, -1) + '</td>');
-                    }
-                    row.append('<th>' + settings.stringNotes[s].slice(0, -1) + '</th>');
-                } else {
-                    row.append('<th>' + settings.stringNotes[s].slice(0, -1) + '</th>');
-                    for (let f = 1; f <= settings.frets; f++) {
-                        const note = getNoteAtFret(settings.stringNotes[s], f * settings.musicalNotes.step);
-                        row.append('<td>' + note.slice(0, -1) + '</td>');
-                    }
-                }
-                tbody.append(row);
-            }
-        }
+			const theadRow = $('.fretboard thead tr');
+			theadRow.empty();
+			if (settings.hand === 'left') {
+				for (let fret = settings.frets; fret >= 1; fret--) {
+					theadRow.append('<th>' + fret + '</th>');
+				}
+				theadRow.append('<th>Húr/Fret</th>');
+			} else {
+				theadRow.append('<th>Húr/Fret</th>');
+				for (let fret = 1; fret <= settings.frets; fret++) {
+					theadRow.append('<th>' + fret + '</th>');
+				}
+			}
+
+			// Helyes sorrendben jelenítjük meg a húrokat jobbkezes gitár esetén
+			const stringNotesForDisplay = settings.hand === 'left' ? settings.stringNotes : settings.stringNotes.slice().reverse();
+
+			for (let stringIndex = 0; stringIndex < settings.strings; stringIndex++) {
+				const row = $('<tr>');
+				if (settings.hand === 'left') {
+					for (let fret = settings.frets; fret >= 1; fret--) {
+						const note = getNoteAtFret(stringNotesForDisplay[stringIndex], fret * settings.musicalNotes.step);
+						row.append('<td>' + note.slice(0, -1) + '</td>');
+					}
+					row.append('<th>' + stringNotesForDisplay[stringIndex].slice(0, -1) + '</th>');
+				} else {
+					row.append('<th>' + stringNotesForDisplay[stringIndex].slice(0, -1) + '</th>');
+					for (let fret = 1; fret <= settings.frets; fret++) {
+						const note = getNoteAtFret(stringNotesForDisplay[stringIndex], fret * settings.musicalNotes.step);
+						row.append('<td>' + note.slice(0, -1) + '</td>');
+					}
+				}
+				tbody.append(row);
+			}
+		}
+		//renderfretboard_end
 
         window.showSettingsModal = showSettingsModal;
         window.saveSettings = saveSettings;
@@ -367,6 +459,7 @@
         window.selectInstrument = selectInstrument;
 
         renderFretboard();
+		applyScale();
     });
 </script>
 </body>
